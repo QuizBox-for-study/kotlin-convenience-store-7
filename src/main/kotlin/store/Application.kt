@@ -1,7 +1,6 @@
 package store
 
 import java.io.File
-import java.time.LocalDate
 
 class MarkdownReader(val filePath: String) {
     private val lines: List<String> = File(filePath).useLines { it.toList() }
@@ -23,6 +22,35 @@ class MarkdownReader(val filePath: String) {
     }
 }
 
+class Receipt(
+    val purchase: String?,
+    val inventorys: Inventorys) {
+    fun createReceipt() {
+        println()
+        println("==============W 편의점================")
+        println("상품명\t\t수량\t금액")
+
+        val items = InputParser.parsePurchaseInput(purchase)
+        var total = 0
+        var totalQuantity = 0
+        items.forEach { (name, quantity) ->
+            val item = inventorys.inventoryList.find { it.name == name }
+            if (item != null) {
+                val price = item.price * quantity
+                total += price
+                totalQuantity += quantity
+                println("$name\t\t$quantity\t${price}원")
+            }
+        }
+
+        println("=============증\t정===============")
+
+
+        println("====================================")
+        println("총구매액\t\t${totalQuantity}\t${total}원")
+    }
+}
+
 class Promotions(val promotionList: List<Promotion>) {
     fun printAll() {
         promotionList.forEach {
@@ -34,7 +62,7 @@ class Promotions(val promotionList: List<Promotion>) {
 class Promotion(var name: String, var buy: Int, var get: Int, var startDate: String, var endDate: String) {
 }
 
-class Inventorys(val inventoryList: List<Inventory>) {
+class Inventorys(val inventoryList: MutableList<Inventory>) {
     fun printAllCurrentStocks() {
         println("안녕하세요. W편의점입니다.")
         println("현재 보유하고 있는 상품입니다.")
@@ -44,8 +72,7 @@ class Inventorys(val inventoryList: List<Inventory>) {
             // todo : 돈 출력 시 백원 단위마다 , 추가하는 부분
             if (it.promotion == "null") {
                 println("- ${it.name} ${it.price}원 ${it.quantity}개")
-            }
-            else {
+            } else {
                 println("- ${it.name} ${it.price}원 ${it.quantity}개 ${it.promotion}")
             }
         }
@@ -59,6 +86,20 @@ class Inventory(var name: String, var price: Int, var quantity: Int, var promoti
 class Execute {
     fun printHello() {
         println("hello")
+    }
+}
+
+object InputParser {
+    fun parsePurchaseInput(purchase: String?): List<Pair<String, Int>> {
+        if (purchase.isNullOrBlank()) return emptyList()
+
+        return purchase
+            .split("],[").map {
+                it.replace("[", "").replace("]", "")
+            }.map {
+                val (name, quantity) = it.split("-")
+                name to quantity.toInt()
+            }
     }
 }
 
@@ -91,7 +132,7 @@ fun main() {
             )
         }
 
-    val inventorys = Inventorys(inventoryList)
+    val inventorys = Inventorys(inventoryList.toMutableList())
     val promotions = Promotions(promotionList)
 
 //    println("저장된 재고 목록")
@@ -101,5 +142,12 @@ fun main() {
 //    promotions.printAll()
 
     inventorys.printAllCurrentStocks()
+    println("구매하실 상품명과 수량을 입력해 주세요. (예: [사이다-2],[감자칩-1]")
+
+    var purchase = readLine()
+
+    val receipt = Receipt(purchase, inventorys)
+    receipt.createReceipt()
+
 
 }
